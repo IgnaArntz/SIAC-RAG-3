@@ -1,33 +1,35 @@
 # SIAC - Sistema Inteligente de Asistencia Clínica
 
-SIAC es un asistente clínico virtual académico desarrollado con **FastAPI** y una arquitectura híbrida basada en **RAG (Retrieval-Augmented Generation)** y un **agente con memoria conversacional**.
+SIAC es un asistente clínico virtual académico desarrollado con **FastAPI** y una arquitectura híbrida basada en **RAG (Retrieval-Augmented Generation)**, **memoria conversacional** y **observabilidad**.
 
-El sistema permite responder preguntas relacionadas con documentos clínicos almacenados en una base vectorial **ChromaDB**, además de mantener contexto básico de la conversación mediante memoria temporal.
+El sistema permite responder preguntas relacionadas con documentos clínicos almacenados en una base vectorial **ChromaDB**, mantener contexto básico de la conversación mediante memoria temporal y monitorear su comportamiento mediante métricas, logs y un dashboard visual.
 
 ---
 
 # Tecnologías utilizadas
 
-* FastAPI
-* Python
-* GitHub Models
-* OpenAI SDK
-* LangChain
-* ChromaDB
-* Sentence Transformers
-* Pydantic
-* Uvicorn
-* Python Dotenv
+- FastAPI
+- Python
+- GitHub Models
+- OpenAI SDK
+- LangChain
+- ChromaDB
+- Sentence Transformers
+- Pydantic
+- Uvicorn
+- Python Dotenv
+- Streamlit
+- Logging estándar de Python
 
 ---
 
-# Arquitectura General
+# Arquitectura general
 
 ```text
 Usuario
    │
    ▼
-FastAPI (/ask)
+FastAPI (/ask, /metrics)
    │
    ▼
 Agent Service
@@ -40,6 +42,9 @@ Agent Service
    └──────────────► search_documents()
                          │
                          ▼
+                     RAG Service
+                         │
+                         ▼
                      ChromaDB
                          │
                          ▼
@@ -48,20 +53,18 @@ Agent Service
 
 ---
 
-# Arquitectura del Agente
+# Arquitectura del agente
 
 El sistema incorpora un agente simple basado en reglas.
 
 El agente analiza la intención de la consulta y selecciona automáticamente la herramienta más adecuada.
 
-Herramientas disponibles:
+## Herramientas disponibles
 
-### search_documents()
-
+### `search_documents()`
 Permite recuperar información semánticamente relevante desde ChromaDB mediante embeddings y búsqueda vectorial.
 
-### search_memory()
-
+### `search_memory()`
 Permite recuperar mensajes almacenados en memoria temporal para mantener continuidad conversacional.
 
 ---
@@ -72,17 +75,18 @@ Permite recuperar mensajes almacenados en memoria temporal para mantener continu
 2. FastAPI recibe la solicitud.
 3. El agente analiza la consulta.
 4. Dependiendo de la intención:
-
-   * consulta memoria;
-   * consulta documentos.
-5. Se genera la respuesta.
-6. La interacción se almacena en memoria.
+   - consulta memoria;
+   - consulta documentos.
+5. Se recupera información desde la base vectorial.
+6. Se registran métricas y logs.
+7. Se genera la respuesta.
+8. La interacción se almacena en memoria.
 
 ---
 
-# Memoria Conversacional
+# Memoria conversacional
 
-El sistema incorpora una memoria temporal implementada mediante:
+El sistema incorpora una memoria temporal implementada en:
 
 ```text
 app/services/memory_service.py
@@ -90,40 +94,37 @@ app/services/memory_service.py
 
 La memoria almacena los últimos mensajes intercambiados entre usuario y asistente.
 
-Objetivos:
+## Objetivos
 
-* mantener contexto;
-* recuperar información previa;
-* demostrar continuidad conversacional;
-* apoyar la toma de decisiones del agente.
+- Mantener contexto entre interacciones.
+- Recuperar información previa.
+- Demostrar continuidad conversacional.
+- Apoyar la toma de decisiones del agente.
 
-Ejemplo:
+## Ejemplo
 
-Pregunta:
-
+### Pregunta
 ```text
 Mi nombre es Ignacio
 ```
 
-Posteriormente:
-
+### Posteriormente
 ```text
 ¿Qué dije antes?
 ```
 
-Respuesta:
-
+### Respuesta
 ```text
 Antes dijiste: Mi nombre es Ignacio
 ```
 
 ---
 
-# Recuperación Semántica (RAG)
+# Recuperación semántica (RAG)
 
-El sistema utiliza una arquitectura RAG para responder preguntas basadas en documentos clínicos.
+SIAC utiliza una arquitectura RAG para responder preguntas basadas en documentos clínicos.
 
-Proceso:
+## Proceso
 
 ```text
 Pregunta
@@ -144,11 +145,77 @@ Documentos relevantes
 Respuesta
 ```
 
-Beneficios:
+## Beneficios
 
-* reducción de alucinaciones;
-* respuestas basadas en evidencia documental;
-* reutilización de documentos clínicos existentes.
+- Reducción de alucinaciones.
+- Respuestas basadas en evidencia documental.
+- Reutilización de documentos clínicos existentes.
+- Mayor precisión y trazabilidad de la información.
+
+---
+
+# Observabilidad y monitoreo
+
+Durante la implementación se incorporó un módulo de observabilidad para medir el comportamiento del sistema.
+
+## Métricas implementadas
+
+El sistema expone métricas a través del endpoint:
+
+```text
+GET /metrics
+```
+
+Las métricas registradas son:
+
+- total de consultas;
+- consultas exitosas;
+- cantidad de errores;
+- latencia promedio.
+
+## Ejemplo de respuesta
+
+```json
+{
+  "total_requests": 1,
+  "successful_requests": 1,
+  "errors": 0,
+  "average_latency": 10.17,
+  "timestamp": "2026-07-05 10:33:32"
+}
+```
+
+## Logs de ejecución
+
+Los eventos del sistema se almacenan automáticamente en:
+
+```text
+logs/siac.log
+```
+
+Ejemplos registrados:
+
+- pregunta recibida;
+- respuesta generada correctamente;
+- latencia de respuesta;
+- errores detectados.
+
+## Dashboard de observabilidad
+
+Se implementó un dashboard en **Streamlit** para visualizar el estado general del sistema.
+
+Archivo principal:
+
+```text
+dashboard.py
+```
+
+El dashboard permite observar:
+
+- cantidad de consultas;
+- consultas exitosas;
+- errores;
+- latencia promedio.
 
 ---
 
@@ -158,10 +225,8 @@ Beneficios:
 
 ```bash
 git clone URL_DEL_REPOSITORIO
-cd SIAC-RAG
+cd SIAC-RAG-2-main
 ```
-
----
 
 ## 2. Crear entorno virtual
 
@@ -169,11 +234,9 @@ cd SIAC-RAG
 python -m venv venv311
 ```
 
----
-
 ## 3. Activar entorno virtual
 
-Windows PowerShell:
+### Windows PowerShell
 
 ```powershell
 .\venv311\Scripts\Activate.ps1
@@ -185,8 +248,6 @@ Si PowerShell bloquea la ejecución:
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
----
-
 ## 4. Instalar dependencias
 
 ```bash
@@ -195,15 +256,15 @@ pip install -r requirements.txt
 
 ---
 
-# Variables de Entorno
+# Variables de entorno
 
-Crear un archivo:
+Crear un archivo llamado:
 
 ```text
 .env
 ```
 
-Ejemplo:
+Ejemplo de configuración:
 
 ```env
 GITHUB_TOKEN=TU_TOKEN
@@ -222,15 +283,18 @@ Agregar al archivo `.gitignore`:
 venv/
 venv311/
 __pycache__/
+logs/
+chroma/
+chroma_db/
 ```
 
 Nunca subir credenciales al repositorio.
 
 ---
 
-# Crear Base Vectorial
+# Crear base vectorial
 
-Procesar documentos:
+Procesar los documentos:
 
 ```bash
 python create_db.py
@@ -246,7 +310,7 @@ Esto genera la colección vectorial utilizada por ChromaDB.
 python -m uvicorn app.main:app --reload --port 8001
 ```
 
-Servidor:
+Servidor disponible en:
 
 ```text
 http://127.0.0.1:8001
@@ -264,11 +328,21 @@ http://127.0.0.1:8001/docs
 
 ---
 
-# Endpoint Principal
+# Dashboard de monitoreo
 
-## POST /ask
+Ejecutar:
 
-Ejemplo:
+```bash
+streamlit run dashboard.py
+```
+
+---
+
+# Endpoints principales
+
+## POST `/ask`
+
+Ejemplo de solicitud:
 
 ```json
 {
@@ -276,7 +350,7 @@ Ejemplo:
 }
 ```
 
-Respuesta:
+Ejemplo de respuesta:
 
 ```json
 {
@@ -284,28 +358,29 @@ Respuesta:
 }
 ```
 
+## GET `/metrics`
+
+Devuelve las métricas actuales del sistema en tiempo real.
+
 ---
 
-# Ejemplos de Uso
+# Ejemplos de uso
 
 ## Consulta documental
 
-Entrada:
-
+### Entrada
 ```json
 {
   "question": "¿Qué información existe sobre atención clínica?"
 }
 ```
 
-Acción ejecutada:
-
+### Acción ejecutada
 ```text
 search_documents()
 ```
 
-Resultado:
-
+### Resultado
 ```text
 Información recuperada desde ChromaDB.
 ```
@@ -314,33 +389,28 @@ Información recuperada desde ChromaDB.
 
 ## Consulta de memoria
 
-Entrada:
-
+### Entrada
 ```json
 {
   "question": "¿Qué dije antes?"
 }
 ```
 
-Acción ejecutada:
-
+### Acción ejecutada
 ```text
 search_memory()
 ```
 
-Resultado:
-
+### Resultado
 ```text
 Antes dijiste: Mi nombre es Ignacio
 ```
 
 ---
 
-# Toma de Decisiones del Agente
+# Toma de decisiones del agente
 
-El agente utiliza reglas para seleccionar herramientas.
-
-Ejemplo:
+El agente utiliza reglas para seleccionar herramientas según el contenido de la consulta.
 
 ```python
 if any(word in lower_question for word in memory_keywords):
@@ -353,84 +423,96 @@ Esto permite que el agente opere con autonomía básica y seleccione recursos se
 
 ---
 
-# Estructura del Proyecto
+# Estructura del proyecto
 
 ```text
-SIAC-RAG/
+SIAC-RAG-2-main/
 │
 ├── app/
-│
-├── api/
-│   └── routes.py
-│
-├── services/
-│   ├── agent_service.py
-│   ├── memory_service.py
-│   ├── tools_service.py
-│   ├── rag_service.py
-│   ├── vector_service.py
-│   └── loader_service.py
+│   ├── api/
+│   │   └── routes.py
+│   ├── core/
+│   │   ├── config.py
+│   │   └── prompts.py
+│   ├── data/
+│   │   └── documentos/
+│   ├── monitoring/
+│   │   ├── metrics.py
+│   │   └── logger.py
+│   ├── models/
+│   │   ├── question_model.py
+│   │   └── response_model.py
+│   └── services/
+│       ├── agent_service.py
+│       ├── memory_service.py
+│       ├── tools_service.py
+│       ├── rag_service.py
+│       ├── vector_service.py
+│       └── loader_service.py
 │
 ├── chroma/
-│
+├── logs/
+├── dashboard.py
+├── create_db.py
 ├── .env
 ├── requirements.txt
 ├── README.md
-└── main.py
+└── app/main.py
 ```
 
 ---
 
 # Funcionalidades
 
-* Arquitectura RAG.
-* Recuperación semántica.
-* ChromaDB.
-* Embeddings.
-* Memoria conversacional.
-* Agente con toma de decisiones.
-* Integración con GitHub Models.
-* Swagger UI.
-* FastAPI.
-* Separación modular por servicios.
-* Configuración mediante variables de entorno.
+- Arquitectura RAG.
+- Recuperación semántica.
+- ChromaDB.
+- Embeddings.
+- Memoria conversacional.
+- Agente con toma de decisiones.
+- Observabilidad mediante métricas.
+- Logs persistentes.
+- Dashboard de monitoreo.
+- Swagger UI.
+- FastAPI.
+- Separación modular por servicios.
+- Configuración mediante variables de entorno.
 
 ---
 
-# Justificación de Componentes
+# Justificación de componentes
 
 ### FastAPI
-
 Permite construir APIs modernas, rápidas y fácilmente documentables mediante Swagger.
 
 ### ChromaDB
-
 Facilita el almacenamiento y recuperación eficiente de embeddings para búsqueda semántica.
 
 ### Arquitectura RAG
-
 Permite responder utilizando información documental real, reduciendo respuestas inventadas.
 
-### Memoria Conversacional
-
+### Memoria conversacional
 Permite mantener continuidad entre interacciones y recuperar información previa del usuario.
 
 ### Agente
-
 Permite seleccionar dinámicamente la herramienta más adecuada según la intención detectada.
+
+### Observabilidad
+Permite medir el rendimiento del sistema, detectar errores y visualizar métricas operativas.
 
 ---
 
-# Consideraciones Académicas
+# Consideraciones académicas
 
 Este proyecto fue desarrollado con fines académicos para demostrar:
 
-* agentes inteligentes;
-* recuperación semántica;
-* memoria conversacional;
-* toma de decisiones;
-* integración de herramientas;
-* arquitecturas RAG.
+- agentes inteligentes;
+- recuperación semántica;
+- memoria conversacional;
+- toma de decisiones;
+- integración de herramientas;
+- observabilidad;
+- arquitecturas RAG.
 
 El sistema no reemplaza criterio clínico profesional ni realiza diagnósticos médicos.
 
@@ -439,5 +521,3 @@ El sistema no reemplaza criterio clínico profesional ni realiza diagnósticos m
 # Autor
 
 Proyecto académico SIAC.
-
-# SIAC-RAG-3
